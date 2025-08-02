@@ -145,7 +145,8 @@
             transform: scale(1.05);
         }
         
-        .link-item a:visited {
+        /* This class will now handle the visited state */
+        .link-item a.link-visited {
             background-color: var(--link-visited-bg-color);
             color: var(--link-visited-text-color);
             border-color: #4a3b1a;
@@ -291,6 +292,9 @@
         </div>
         
         <footer>
+            <div class="footer-links">
+                <a href="#" id="reset-visits">Reset Visited Sites</a>
+            </div>
             <p>This treasure map is for informational purposes only and holds no hosted content. All links lead to third-party shores.</p>
             <p>© <span id="year"></span> Pirate's Treasure. All rights reserved.</p>
         </footer>
@@ -299,6 +303,85 @@
     
     <script>
         document.getElementById("year").textContent = new Date().getFullYear();
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const linkGrids = document.querySelectorAll('.link-grid');
+            const visitedClass = 'link-visited'; // Define the class name
+    
+            // Function to get click count for a link's href
+            const getClickCount = (href) => {
+                return parseInt(localStorage.getItem(href) || '0', 10);
+            };
+    
+            // Function to increment click count and apply visited class
+            const handleLinkClick = (event) => {
+                const link = event.currentTarget;
+                const href = link.getAttribute('href');
+                if (href) {
+                    let count = getClickCount(href);
+                    localStorage.setItem(href, ++count);
+                    link.classList.add(visitedClass); // Add class on click
+                }
+            };
+    
+            // Set up each grid
+            linkGrids.forEach(grid => {
+                const items = Array.from(grid.querySelectorAll('.link-item'));
+    
+                items.forEach(item => {
+                    const anchor = item.querySelector('a');
+                    if (anchor) {
+                        const href = anchor.getAttribute('href');
+                        // On load, check if link was visited before and apply class
+                        if (getClickCount(href) > 0) {
+                            anchor.classList.add(visitedClass);
+                        }
+                        // Attach the click listener
+                        anchor.addEventListener('click', handleLinkClick);
+                    }
+                });
+    
+                // Sort the items based on the click count of their links
+                items.sort((itemA, itemB) => {
+                    const anchorA = itemA.querySelector('a');
+                    const anchorB = itemB.querySelector('a');
+                    if (!anchorA || !anchorB) return 0;
+    
+                    const hrefA = anchorA.getAttribute('href');
+                    const hrefB = anchorB.getAttribute('href');
+    
+                    return getClickCount(hrefB) - getClickCount(hrefA);
+                });
+    
+                // Re-append sorted items to the grid
+                items.forEach(item => grid.appendChild(item));
+            });
+    
+            // Functionality for the reset button
+            const resetButton = document.getElementById('reset-visits');
+            if (resetButton) {
+                resetButton.addEventListener('click', function(event) {
+                    event.preventDefault(); 
+                    if (confirm('Are you sure you want to reset the visit counts and colors for all sites?')) {
+                        const allAnchors = document.querySelectorAll('.link-item a');
+                        allAnchors.forEach(anchor => {
+                            const href = anchor.getAttribute('href');
+                            if (href) {
+                                // Clear the stored count
+                                localStorage.removeItem(href);
+                            }
+                            // Remove the visual visited class
+                            anchor.classList.remove(visitedClass);
+                        });
+                        alert('Visit counts and colors have been reset.');
+                        // Reload to reset the sorting order
+                        location.reload();
+                    }
+                });
+            }
+        });
     </script>
 
 </body>
